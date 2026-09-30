@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.local
+.env.*.local
+*.log
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+crash.log
+backend/build/
+frontend/dist/
+.DS_Store

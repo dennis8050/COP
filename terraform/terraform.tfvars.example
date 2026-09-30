@@ -1,0 +1,8 @@
+aws_region = "ca-central-1"
+project_name = "church-attendance"
+environment = "development"
+db_name = "church_attendance"
+db_username = "churchapp"
+db_instance_class = "db.t4g.micro"
+cors_origin = "http://localhost:5173"
+github_repository = "YOUR_GITHUB_ORG/YOUR_REPOSITORY"

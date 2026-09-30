@@ -1,0 +1,37 @@
+name: Backend
+
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**']
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm test --workspace backend
+      - run: npm run build --workspace backend
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Package/deploy Lambda functions
+        run: |
+          cd terraform
+          terraform init -input=false
+          terraform apply -auto-approve \
+            -var="project_name=${{ vars.TF_PROJECT_NAME }}" \
+            -var="environment=${{ vars.TF_ENVIRONMENT }}" \
+            -var="aws_region=${{ vars.AWS_REGION }}" \
+            -var="db_name=${{ vars.TF_DB_NAME }}" \
+            -var="db_username=${{ vars.TF_DB_USERNAME }}" \
+            -var="cors_origin=${{ vars.TF_CORS_ORIGIN }}" \
+            -var="github_repository=${{ github.repository }}"

@@ -1,0 +1,15 @@
+import { useEffect,useState } from 'react';
+import { api } from '../services/api';
+import StatCard from '../components/StatCard';
+
+function csv(rows:any[]){const head=['Date','Service','Member','Status'];const lines=[head,...rows.map(r=>[r.attendance_date.slice(0,10),r.service_type,`${r.first_name} ${r.last_name}`,r.status])].map(x=>x.map(v=>`"${String(v).replaceAll('"','""')}"`).join(','));const blob=new Blob([lines.join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='attendance-report.csv';a.click();URL.revokeObjectURL(a.href)}
+export default function Reports(){
+ const [from,setFrom]=useState('');const [to,setTo]=useState('');const [status,setStatus]=useState('');const [data,setData]=useState<any|null>(null);const [error,setError]=useState('');
+ const load=()=>api.report(`?from=${from}&to=${to}&status=${status}`).then(r=>setData(r.data)).catch(e=>setError(e.message));
+ useEffect(()=>{load()},[]);
+ return <div><div className="mb-6"><h1 className="text-3xl font-bold">Reports</h1><p className="text-slate-500">Filter, review and export attendance data.</p></div>
+ {error&&<div className="mb-4 rounded-xl bg-red-50 p-3 text-red-700">{error}</div>}
+ <div className="card mb-4 grid gap-4 p-4 md:grid-cols-4"><div><label className="label">From</label><input className="input" type="date" value={from} onChange={e=>setFrom(e.target.value)}/></div><div><label className="label">To</label><input className="input" type="date" value={to} onChange={e=>setTo(e.target.value)}/></div><div><label className="label">Status</label><select className="input" value={status} onChange={e=>setStatus(e.target.value)}><option value="">All</option><option value="present">Present</option><option value="absent">Absent</option><option value="excused">Excused</option></select></div><div className="flex items-end gap-2"><button className="btn btn-primary" onClick={load}>Run report</button>{data&&<button className="btn btn-secondary" onClick={()=>csv(data.rows)}>CSV</button>}</div></div>
+ {data&&<><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><StatCard label="Total" value={data.summary.totalAttendance}/><StatCard label="Present" value={data.summary.present}/><StatCard label="Absent" value={data.summary.absent}/><StatCard label="Excused" value={data.summary.excused}/><StatCard label="Attendance %" value={`${data.summary.attendancePercentage}%`}/></div><div className="card mt-6 overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50"><tr><th className="p-4">Date</th><th className="p-4">Member</th><th className="p-4">Service</th><th className="p-4">Status</th></tr></thead><tbody>{data.rows.map((r:any,i:number)=><tr className="border-t" key={i}><td className="p-4">{r.attendance_date.slice(0,10)}</td><td className="p-4">{r.first_name} {r.last_name}</td><td className="p-4">{r.service_type}</td><td className="p-4 capitalize">{r.status}</td></tr>)}</tbody></table></div></div></>}
+ </div>
+}

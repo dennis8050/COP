@@ -1,0 +1,55 @@
+name: Terraform
+
+on:
+  pull_request:
+    paths: ['terraform/**']
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Apply infrastructure"
+        required: true
+        default: "false"
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: npm run build --workspace backend
+      - uses: hashicorp/setup-terraform@v3
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - run: |
+          cd terraform
+          terraform init -input=false
+          terraform validate
+          terraform plan -input=false \
+            -var="project_name=${{ vars.TF_PROJECT_NAME }}" \
+            -var="environment=${{ vars.TF_ENVIRONMENT }}" \
+            -var="aws_region=${{ vars.AWS_REGION }}" \
+            -var="db_name=${{ vars.TF_DB_NAME }}" \
+            -var="db_username=${{ vars.TF_DB_USERNAME }}" \
+            -var="cors_origin=${{ vars.TF_CORS_ORIGIN }}" \
+            -var="github_repository=${{ github.repository }}"
+      - name: Production apply
+        if: github.event_name == 'workflow_dispatch' && inputs.apply == 'true'
+        run: |
+          cd terraform
+          terraform apply -auto-approve \
+            -var="project_name=${{ vars.TF_PROJECT_NAME }}" \
+            -var="environment=${{ vars.TF_ENVIRONMENT }}" \
+            -var="aws_region=${{ vars.AWS_REGION }}" \
+            -var="db_name=${{ vars.TF_DB_NAME }}" \
+            -var="db_username=${{ vars.TF_DB_USERNAME }}" \
+            -var="cors_origin=${{ vars.TF_CORS_ORIGIN }}" \
+            -var="github_repository=${{ github.repository }}"
