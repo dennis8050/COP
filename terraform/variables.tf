@@ -1,4 +1,4 @@
-variable "aws_region" { type=string default="ca-central-1" }
+variable "aws_region" { type=string default ="us-east-1" }
 variable "environment" { type=string default="development" validation { condition=contains(["development","staging","production"],var.environment) error_message="environment must be development, staging or production" } }
 variable "project_name" { type=string default="church-attendance" }
 variable "db_name" { type=string default="church_attendance" }
